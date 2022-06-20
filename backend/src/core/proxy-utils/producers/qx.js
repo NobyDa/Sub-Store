@@ -91,7 +91,7 @@ function shadowsocksr(proxy) {
     const append = result.append.bind(result);
     const appendIfPresent = result.appendIfPresent.bind(result);
 
-    append(`shadowsocksr=${proxy.server}:${proxy.port}`);
+    append(`shadowsocks=${proxy.server}:${proxy.port}`);
     append(`,method=${proxy.cipher}`);
     append(`,password=${proxy.password}`);
 
