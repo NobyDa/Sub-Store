@@ -1,5 +1,5 @@
-import $ from '@/core/app';
 import { CACHE_EXPIRATION_TIME_MS, RESOURCE_CACHE_KEY } from '@/constants';
+import $ from '@/core/app';
 
 class ResourceCache {
     constructor(expires) {
@@ -15,9 +15,17 @@ class ResourceCache {
         // clear obsolete cached resource
         let clear = false;
         Object.entries(this.resourceCache).forEach((entry) => {
-            const [id, updated] = entry;
-            if (new Date().getTime() - updated > this.expires) {
+            let [id, obj] = entry;
+            if (typeof obj == 'number') {
+                // migrate
+                this.resourceCache[id] = {};
+                this.resourceCache[id].time = obj;
+                this.resourceCache[id].data = $.read(`#${id}`);
+                obj = { time: obj };
                 $.delete(`#${id}`);
+                clear = true;
+            }
+            if (new Date().getTime() - obj.time > this.expires) {
                 delete this.resourceCache[id];
                 clear = true;
             }
@@ -26,9 +34,6 @@ class ResourceCache {
     }
 
     revokeAll() {
-        Object.keys(this.resourceCache).forEach((id) => {
-            $.delete(`#${id}`);
-        });
         this.resourceCache = {};
         this._persist();
     }
@@ -38,17 +43,18 @@ class ResourceCache {
     }
 
     get(id) {
-        const updated = this.resourceCache[id];
+        const updated = this.resourceCache[id].time;
         if (updated && new Date().getTime() - updated <= this.expires) {
-            return $.read(`#${id}`);
+            return this.resourceCache[id].data;
         }
         return null;
     }
 
     set(id, value) {
-        this.resourceCache[id] = new Date().getTime();
+        this.resourceCache[id] = {};
+        this.resourceCache[id].time = new Date().getTime();
+        this.resourceCache[id].data = value;
         this._persist();
-        $.write(value, `#${id}`);
     }
 }
 
